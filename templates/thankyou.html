@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}Thank You | Yen's Personal Webpage{% endblock %}
+{% block subtitle %}Thank you for your submission!{% endblock %}
+
+{% block content %}
+<div class="col-lg-9 col-md-6 col-sm-12 col-xs-9">
+    <p>I appreciate your interest and will get back to you as soon as possible.</p>
+    <p><a href="{{ url_for('home') }}" class="btn btn-primary">Return to Home</a></p>
+</div>
+{% endblock %}

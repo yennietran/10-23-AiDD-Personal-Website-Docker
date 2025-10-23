@@ -1,0 +1,594 @@
+import os
+import secrets
+from pathlib import Path
+from flask import Flask, render_template, request, redirect, url_for, flash
+from werkzeug.utils import secure_filename
+import DAL
+
+app = Flask(__name__)
+app.secret_key = secrets.token_hex(16)
+
+# Upload configuration
+app.config["UPLOAD_FOLDER"] = Path("static/images")
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5 MB max file size
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
+
+def allowed_file(filename):
+    """Check if file has an allowed extension."""
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def save_image(file_storage):
+    """
+    Save uploaded image to static/images folder.
+    Returns the stored filename (not full path).
+    Raises ValueError if file is invalid.
+    """
+    if not file_storage or file_storage.filename == "":
+        raise ValueError("No file selected")
+    
+    if not allowed_file(file_storage.filename):
+        raise ValueError("Invalid file type. Allowed: png, jpg, jpeg, gif, webp")
+    
+    # Sanitize filename
+    filename = secure_filename(file_storage.filename)
+    
+    # Ensure upload folder exists
+    upload_folder = Path(app.config["UPLOAD_FOLDER"])
+    upload_folder.mkdir(parents=True, exist_ok=True)
+    
+    # Check if file exists and append unique suffix if needed
+    filepath = upload_folder / filename
+    if filepath.exists():
+        name, ext = filename.rsplit(".", 1)
+        unique_suffix = secrets.token_hex(3)
+        filename = f"{name}__{unique_suffix}.{ext}"
+        filepath = upload_folder / filename
+    
+    # Save file
+    file_storage.save(str(filepath))
+    return filename
+
+
+
+# --- Inline HTML pages as Jinja templates (minimal changes) ---
+INDEX_HTML = """<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>Yen's Personal Webpage</title>
+
+        <link
+            rel="stylesheet"
+            href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+        />
+        <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <link rel="stylesheet" href="{{ url_for('css_file') }}" />
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>Yen's Personal Webpage</h1>
+                <h3>MSIS | Kelley School of Business | Indiana University</h3>
+            </header>
+
+            <nav class="row navbar navbar-default">
+                <div class="navbar-header">
+                    <button
+                        class="navbar-toggle"
+                        data-toggle="collapse"
+                        data-target="#mynav"
+                    >
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="collapse navbar-collapse" id="mynav">
+                    <ul class="nav navbar-nav">
+                        <li><a class="nav_link" href="{{ url_for('home') }}">Home</a></li>
+                        <li><a class="nav_link" href="{{ url_for('about') }}">About Me</a></li>
+                        <li><a class="nav_link" href="{{ url_for('resume') }}">Resume</a></li>
+                        <li><a class="nav_link" href="{{ url_for('projects') }}">Projects</a></li>
+                        <li>
+                            <a class="nav_link" href="{{ url_for('contact') }}">Contact</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <main class="row">
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <p>
+                        Hello! Nice to meet you. My name is Yennie Tran. I was born and raised in Indianapolis, Indiana. 
+                        Currently, I am a Masters student at the Kelley School of Business at Indiana University Bloomington studying Information Systems. 
+                        I run on 2 cups of coffee a day and a lot of curiosity. I enjoy learning new things, trying out new ideas, and acting a bit silly. 
+                        I also enjoy working with people and turning random ideas into cool working projects! 
+                        I have also rode an ostrich before. They are quite spiky birds.
+                    </p>
+                         <p>
+                        This is my personal webpage that I created as part of my coursework. 
+                        Feel free to explore around and learn more about me, my projects, and how to contact me!
+                    </p>
+                     <p><strong>NOTE:</strong> <a href="https://github.com/yennietran/10-4-AIDD-Assignment-5.git" target="_blank">Link to Github Repo for this assignment</a></p>
+                    <div class="features-row" style="display:flex;gap:12px;margin-top:18px;justify-content:space-between;flex-wrap:wrap;">
+                        <div style="flex:1 1 30%;text-align:center;">
+                            <a class="feature-link" href="{{ url_for('about') }}">
+                                <img src="{{ url_for('images', filename='myexperience.png') }}" alt="My Experience" class="img-responsive" />
+                                <div class="feature-overlay">My Experience</div>
+                            </a>
+                        </div>
+                        <div style="flex:1 1 30%;text-align:center;">
+                            <a class="feature-link" href="{{ url_for('resume') }}">
+                                <img src="{{ url_for('images', filename='myskills.jpg') }}" alt="My Skills" class="img-responsive" />
+                                <div class="feature-overlay">My Skills</div>
+                            </a>
+                        </div>
+                        <div style="flex:1 1 30%;text-align:center;">
+                            <a class="feature-link" href="{{ url_for('projects') }}">
+                                <img src="{{ url_for('images', filename='myaccomplishment.png') }}" alt="My Accomplishments" class="img-responsive" />
+                                <div class="feature-overlay">My Accomplishments</div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <footer class="site-footer">
+            <p>Yen's Personal Webpage | Kelley School of Business, Indiana University | &copy; 2025</p>
+        </footer>
+    </body>
+    </html>"""
+
+ABOUT_HTML = """<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>Yen's Personal Webpage</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+        <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('css_file') }}" />
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>Yen's Personal Webpage</h1>
+                <h3>About Me</h3>
+            </header>
+            <nav class="row navbar navbar-default">
+                <div class="navbar-header">
+                    <button class="navbar-toggle" data-toggle="collapse" data-target="#mynav">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="collapse navbar-collapse" id="mynav">
+                    <ul class="nav navbar-nav">
+                        <li><a class="nav_link" href="{{ url_for('home') }}">Home</a></li>
+                        <li><a class="nav_link" href="{{ url_for('about') }}">About Me</a></li>
+                        <li><a class="nav_link" href="{{ url_for('resume') }}">Resume</a></li>
+                        <li><a class="nav_link" href="{{ url_for('projects') }}">Projects</a></li>
+                        <li><a class="nav_link" href="{{ url_for('contact') }}">Contact</a></li>
+                    </ul>
+                </div>
+            </nav>
+            <main class="row">
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <h3>Bibliography</h3>
+                    <img src="{{ url_for('images', filename='professional me.jpeg') }}" width="300" class="img-responsive center-img" alt="professional me" />
+                    <p>
+                     I was born and raised in Indianapolis, Indiana. Growing up, I played doubles tennis, beat my brother in video games,
+                     and even competed in Yu-Gi-Oh tournaments. In 2024, I graduated from Indiana University Bloomington
+                     with a bachelor's degree in psychology and another in speech, language, and hearing sciences. During my
+                     undergraduate years, I had the opportunity to study abroad in Seoul, South Korea where I honed my singing skills
+                     every night at coin karaoke. Afterwards, I spent a month in Japan where I celebrated the holidays with strangers who
+                     quickly became lifelong friends.
+                        <p>
+                        Those experiences sparked a passion for exploring the world and hearing people's stories, so I became a flight
+                        attendant at American Airlines after graduation. I traveled around the globe, met a lot of cool people, gained
+                        a lot of cool experiences, and ate a lot of good food. Working in the aviation industry, I developed a new curiosity:
+                        business and technology. I thought to myself, \"Why do we use this system?\" and \"Why do we do this process when it seems
+                        so inefficient?\" That desire to understand how and why things worked led me to take a leap of faith... Operation Start!
+                        Return to school for a Master's in information systems! Now I'm here basking in all it's glory. 
+                        So wonderful, don't you think?
+                        </p>
+                        <h3>Interests</h3>
+                         <img src="{{ url_for('images', filename='cococute.jpeg') }}" width="300" class="img-responsive center-img" alt="Coco the dog" />
+                        <p>
+                        If I had to name one of my favorite things in the world, it would be dogs. The pic above is my dog Coco! I really, really like dogs. If you have a dog,
+                        please share a pic of them with me! I also enjoy playing video games a lot. I particualrly enjoy rhythm games (osu!, Chunithm,
+                        Taiko no Tatsujin to name a few) but I play a lot of other games as well. On my off days, I relax by watching anime, exploring
+                        new cafes, and roasting in bed. I am also an avid enjoyer of tea (oolong is the best!), so if you enjoy sipping tea and sharing
+                        stories, we should hang out. I've also got into fishing recently. I first did it because I thought it'd teach me the art of
+                        patience, but now I've somehow turned into that one guy that always posts their catches online. It was more fun than I anticipated.
+                        </p>
+                        <h3>Goals</h3>
+                         <img src="{{ url_for('images', filename='me3.jpeg') }}" width="300" class="img-responsive center-img" alt="me" />
+                        <p>After graduation, I hope to return to the airline industry where I can use my new skills in business and technology to 
+                                improve processes and create better experiences for both employees and customers. If not aviation, I'd like to explore
+                                a career in esports, because I've always been interested in it. Aside from career goals, I am interested in
+                                living abroad again, just to experience something new! I also want to learn how to bake yummy foods, level up my billiards
+                                skills, and collect all the licenses in the world (forklift license is next). And lastly, after traveling the world, blast
+                                off into space! I want to be the first MSIS grad to step on the moon. I know, very ambitious.
+                        </p>
+                    </p>
+                </div>
+            </main>
+        </div>
+        <footer class="site-footer">
+            <p>Yen's Personal Webpage | Kelley School of Business, Indiana University | &copy; 2025</p>
+        </footer>
+    </body>
+</html>"""
+
+PROJECTS_HTML = """<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>Yen's Personal Webpage</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+        <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('css_file') }}" />
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>Yen's Personal Webpage</h1>
+                <h3>My Projects</h3>
+            </header>
+            <nav class="row navbar navbar-default">
+                <div class="navbar-header">
+                    <button class="navbar-toggle" data-toggle="collapse" data-target="#mynav">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="collapse navbar-collapse" id="mynav">
+                    <ul class="nav navbar-nav">
+                        <li><a class="nav_link" href="{{ url_for('home') }}">Home</a></li>
+                        <li><a class="nav_link" href="{{ url_for('about') }}">About Me</a></li>
+                        <li><a class="nav_link" href="{{ url_for('resume') }}">Resume</a></li>
+                        <li><a class="nav_link" href="{{ url_for('projects') }}">Projects</a></li>
+                        <li><a class="nav_link" href="{{ url_for('contact') }}">Contact</a></li>
+                    </ul>
+                </div>
+            </nav>
+            <main class="row">
+                <div class="col-lg-12 col-md-6 col-sm-12 col-xs-9">
+                        <h3>FCRE Racing Website | <a class="evloc"href="https://codesandbox.io/p/sandbox/zen-sea-ms7t4v"> Check it out!</a></h3>
+                    <p>
+                        In the summer of 2025, I participated in a required Jumpstart Program designed to equip students with 
+                        essential skills for the upcoming MSIS fall semester. During this program, I built my first website from 
+                        the ground up using HTML, CSS, and Bootstrap. The project, titled FCRE (Four Circles Racing Events), 
+                        is a mock company that provides a Formula 1–style driving experience for group events.
+                    </p>
+                    <p>
+                        The website consists of seven pages — Home, About Us, Events, Specials, Logistics Approval, Participant
+                         Survey, and New Event. Through this project (naming a few), I learned how to structure and style content
+                        using containers, design a responsive navigation bar, embed links, insert images, and build tables to display 
+                        information effectively. Overall, this experience taught me the fundamentals of front-end development and 
+                        how to create a simple, functional, and client-ready website from scratch.
+                    </p>
+                </div>
+                    <img src="{{ url_for('images', filename='fcre home.png') }}" width="300" class="img-responsive" alt="fcre_home" />
+                <img src="{{ url_for('images', filename='fcre new event.png') }}" width="400" class="img-responsive" alt="fcre_new_event" />
+                <img src="{{ url_for('images', filename='fcre survey.png') }}" width="300" class="img-responsive" alt="fcre_survey" />
+                    <br>
+                     <div class="col-lg-12 col-md-6 col-sm-12 col-xs-9">
+                        <h3>iPhone Recommender Chatbot | <a class="evloc"href="https://console.dialogflow.com/api-client/demo/embedded/a4bc0c5f-015d-4992-943c-faddfebad291 "> Check it out!</a></h3>
+                    <p>
+                        During the fall semester of the MSIS program, I took an AI course where we learned how to 
+                        design and develop chatbots. Using Dialogflow, my team and I created a chatbot named Bob that
+                         helps users find the most suitable iPhone based on their preferences. The chatbot asks a series 
+                         of questions about key criteria such as phone size (small, medium, or large), storage capacity 
+                         (256 GB, 512 GB, or 1 TB), and the number of cameras (2 or 3).
+                    </p>
+                    <p>
+                        Based on the user’s responses, Bob recommends an iPhone model currently available on the market.
+                         Each recommendation includes the iPhone version, a breakdown of the requested specifications, and 
+                         the price. The chatbot also features built-in fallback responses to handle unclear input 
+                         gracefully and can restart the conversation if the user wants to search for another device.
+                         There are a lot of options, so feel free to play around with it!
+                    </p></div>
+                 <img src="{{ url_for('images', filename='chatbot1.png') }}" width="500" class="img-responsive" alt="chatbot1" />
+             <img src="{{ url_for('images', filename='chatbot2.png') }}" width="500" class="img-responsive" alt="chatbot2" />
+                <div class="col-lg-3 col-md-6 col-sm-12 col-xs-12"></div>
+                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12"></div>
+            </main>
+        </div>
+        <footer>
+            <p>Yen's Personal Webpage | Kelley School of Business, Indiana University | &copy; 2025</p>
+        </footer>
+    </body>
+    </html>"""
+
+RESUME_HTML = """<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>Yen's Personal Webpage</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+        <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('css_file') }}" />
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>Yen's Personal Webpage</h1>
+                <h3>Resume</h3>
+            </header>
+            <nav class="row navbar navbar-default">
+                <div class="navbar-header">
+                    <button class="navbar-toggle" data-toggle="collapse" data-target="#mynav">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="collapse navbar-collapse" id="mynav">
+                    <ul class="nav navbar-nav">
+                        <li><a class="nav_link" href="{{ url_for('home') }}">Home</a></li>
+                        <li><a class="nav_link" href="{{ url_for('about') }}">About Me</a></li>
+                        <li><a class="nav_link" href="{{ url_for('resume') }}">Resume</a></li>
+                        <li><a class="nav_link" href="{{ url_for('projects') }}">Projects</a></li>
+                        <li><a class="nav_link" href="{{ url_for('contact') }}">Contact</a></li>
+                    </ul>
+                </div>
+            </nav>
+            <main class="row">
+                <div class="col-lg-9 col-md-6 col-sm-12 col-xs-9">
+                        <img src="{{ url_for('images', filename='Tran_Yennie_Resume-1.png') }}" class="img-responsive" alt="my_resume" />
+                    </p></div>
+                <div class="col-lg-3 col-md-6 col-sm-12 col-xs-12"></div>
+                </ol></div>
+            </main>
+        </div>
+            <footer>
+                <p>Yen's Personal Webpage | Kelley School of Business, Indiana University | &copy; 2025</p>
+            </footer>
+    </body>
+</html>"""
+
+CONTACT_HTML = """<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>Yen's Personal Webpage</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+        <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('css_file') }}" />
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>Yen's Personal Webpage</h1>
+                <h3>Contact Me</h3>
+            </header>
+            <nav class="row navbar navbar-default">
+                <div class="navbar-header">
+                    <button class="navbar-toggle" data-toggle="collapse" data-target="#mynav">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="collapse navbar-collapse" id="mynav"> 
+                    <ul class="nav navbar-nav">
+                        <li><a class="nav_link" href="{{ url_for('home') }}">Home</a></li>
+                        <li><a class="nav_link" href="{{ url_for('about') }}">About Me</a></li>
+                        <li><a class="nav_link" href="{{ url_for('resume') }}">Resume</a></li>
+                        <li><a class="nav_link" href="{{ url_for('projects') }}">Projects</a></li>
+                        <li><a class="nav_link" href="{{ url_for('contact') }}">Contact</a></li>
+                    </ul>
+                </div>
+            </nav>
+<main class="col">
+    <div class="col-sm-12 col-md-6">
+        <h3>Contact Form</h3>
+        <form action="{{ url_for('thankyou') }}" method="get">
+            <div>
+                <label for="first-name">First Name:</label>
+                <input type="text" id="first-name" name="first-name" required>
+                <span class="error-message" style="color: red;"></span>
+            </div>
+            <div>
+                <label for="last-name">Last Name:</label>
+                <input type="text" id="last-name" name="last-name" required>
+                <span class="error-message" style="color: red;"></span>
+            </div>
+            <div>
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" name="email" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}">
+                <span class="error-message" style="color: red;"></span>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required minlength="8">
+                <span class="error-message" style="color: red;"></span>
+            </div>
+            <div>
+                <label for="confirm-password">Confirm Password:</label>
+                <input type="password" id="confirm-password" name="confirm-password" required>
+                <span class="error-message" style="color: red;"></span>
+            </div>
+            <div>
+                <button type="submit">Submit</button>
+            </div>
+        </form>
+    </div>
+    <div class="col-sm-12 col-md-6">
+        <div class="contact-panel">
+            <h3>Contact Information</h3>
+            <p><strong>Email:</strong> <a href="mailto:yentran@iu.edu">yentran@iu.edu</a></p>
+            <p><strong>LinkedIn:</strong> <a href="https://linkedin.com/in/tranyennie" target="_blank">https://www.linkedin.com/in/tranyennie/</a></p>
+            <p><strong>GitHub:</strong> <a href="https://github.com/yennietran" target="_blank">https://github.com/yennietran</a></p>
+            <hr>
+            <p>I’m open to new projects, collaborations, and opportunities — feel free to reach out!</p>
+        </div>
+    </div>
+</main>
+        </div>
+            <footer>
+                <p>Yen's Personal Webpage | Kelley School of Business, Indiana University | &copy; 2025</p>
+            </footer>
+    </body>
+</html>"""
+
+THANKYOU_HTML = """<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>Yen's Personal Webpage</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+        <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('css_file') }}" />
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>Yen's Personal Webpage</h1>
+                <h3>Thank you for your submission!</h3>
+            </header>
+            <nav class="row navbar navbar-default">
+                <div class="navbar-header">
+                    <button class="navbar-toggle" data-toggle="collapse" data-target="#mynav">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="collapse navbar-collapse" id="mynav">
+                    <ul class="nav navbar-nav">
+                        <li><a class="nav_link" href="{{ url_for('home') }}">Home</a></li>
+                        <li><a class="nav_link" href="{{ url_for('about') }}">About Me</a></li>
+                        <li><a class="nav_link" href="{{ url_for('resume') }}">Resume</a></li>
+                        <li><a class="nav_link" href="{{ url_for('projects') }}">Projects</a></li>
+                        <li><a class="nav_link" href="{{ url_for('contact') }}">Contact</a></li>
+                    </ul>
+                </div>
+            </nav>
+            <main class="row">
+                <div class="col-lg-9 col-md-6 col-sm-12 col-xs-9">
+                    <p>I appreciate your interest and will get back to you as soon as possible.</p>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-12 col-xs-12"></div>
+                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12"></div>
+            </main>
+        </div>
+            <footer>
+            <p>Yen's Personal Webpage | Kelley School of Business, Indiana University | &copy; 2025</p>
+        </footer>
+    </body>
+</html>"""
+
+
+
+# Routes
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/resume')
+def resume():
+    return render_template('resume.html')
+
+@app.route('/projects')
+def projects():
+    """Display all projects from database in a table."""
+    projects_list = DAL.get_projects()
+    return render_template('projects.html', projects=projects_list)
+
+@app.route('/projects/new', methods=['GET', 'POST'])
+def new_project():
+    """Handle project creation form."""
+    if request.method == 'GET':
+        return render_template('project_form.html')
+    
+    # POST - handle form submission
+    try:
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        image_file = request.files.get('image')
+        
+        # Validation
+        if not title:
+            flash('Title is required', 'error')
+            return render_template('project_form.html'), 400
+        
+        if not description:
+            flash('Description is required', 'error')
+            return render_template('project_form.html'), 400
+        
+        if not image_file:
+            flash('Image is required', 'error')
+            return render_template('project_form.html'), 400
+        
+        # Save image
+        stored_filename = save_image(image_file)
+        
+        # Insert into database
+        DAL.insert_project(title, description, stored_filename)
+        
+        flash('Project added successfully!', 'success')
+        return redirect(url_for('projects'))
+        
+    except ValueError as e:
+        flash(str(e), 'error')
+        return render_template('project_form.html'), 400
+    except Exception as e:
+        flash(f'Error adding project: {str(e)}', 'error')
+        return render_template('project_form.html'), 500
+
+@app.route('/contact', methods=['GET'])
+def contact():
+    return render_template('contact.html')
+
+@app.route('/thankyou')
+def thankyou():
+    return render_template('thankyou.html')
+
+if __name__ == '__main__':
+    # Initialize database on startup
+    DAL.init_db()
+    
+    # Seed database if empty
+    projects_list = DAL.get_projects()
+    if len(projects_list) == 0:
+        print("Seeding database with sample projects...")
+        DAL.insert_project(
+            "FCRE Racing Website",
+            "A seven-page website built with HTML, CSS, and Bootstrap for the mock company FCRE (Four Circles Racing Events), featuring pages like Home, About Us, Events, Specials, Logistics Approval, Participant Survey, and New Event.",
+            "fcre home.png"
+        )
+        DAL.insert_project(
+            "iPhone Recommender Chatbot",
+            "A Dialogflow chatbot that recommends iPhone models based on user preferences such as size, storage, and camera count, with graceful fallbacks and conversation restart.",
+            "chatbot1.png"
+        )
+        print("Database seeded successfully!")
+    
+    app.run(debug=True)

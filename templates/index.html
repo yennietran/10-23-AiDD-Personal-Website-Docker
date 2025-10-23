@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Home | Yen's Personal Webpage{% endblock %}
+
+{% block content %}
+<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+    <p>
+        Hello! Nice to meet you. My name is Yennie Tran. I was born and raised in Indianapolis, Indiana. 
+        Currently, I am a Masters student at the Kelley School of Business at Indiana University Bloomington studying Information Systems. 
+        I run on 2 cups of coffee a day and a lot of curiosity. I enjoy learning new things, trying out new ideas, and acting a bit silly. 
+        I also enjoy working with people and turning random ideas into cool working projects! 
+        I have also rode an ostrich before. They are quite spiky birds.
+    </p>
+    <p>
+        This is my personal webpage that I created as part of my coursework. 
+        Feel free to explore around and learn more about me, my projects, and how to contact me!
+    </p>
+    <p><strong>NOTE:</strong> <a href="https://github.com/yennietran/10-4-AIDD-Assignment-5.git" target="_blank">Link to Github Repo for this assignment</a></p>
+    
+    <div class="features-row" style="display:flex;gap:12px;margin-top:18px;justify-content:space-between;flex-wrap:wrap;">
+        <div style="flex:1 1 30%;text-align:center;">
+            <a class="feature-link" href="{{ url_for('about') }}">
+                <img src="{{ url_for('static', filename='images/myexperience.png') }}" alt="My Experience" class="img-responsive" />
+                <div class="feature-overlay">My Experience</div>
+            </a>
+        </div>
+        <div style="flex:1 1 30%;text-align:center;">
+            <a class="feature-link" href="{{ url_for('resume') }}">
+                <img src="{{ url_for('static', filename='images/myskills.jpg') }}" alt="My Skills" class="img-responsive" />
+                <div class="feature-overlay">My Skills</div>
+            </a>
+        </div>
+        <div style="flex:1 1 30%;text-align:center;">
+            <a class="feature-link" href="{{ url_for('projects') }}">
+                <img src="{{ url_for('static', filename='images/myaccomplishment.png') }}" alt="My Accomplishments" class="img-responsive" />
+                <div class="feature-overlay">My Accomplishments</div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+:root{
+  --bg:#f3f6fb;
+  --primary:#072b52; /* darker deep blue for stronger contrast */
+  --accent:#ff6b6b;  /* bright coral accent */
+  --muted:#3c4b57;    /* darker slate for better readability */
+  --card:#ffffff;
+  --panel:#e6eef9;
+  --shadow: rgba(7,43,82,0.12);
+}
+
+/* Basic reset + typography */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: 'Inter', 'Segoe UI', Roboto, Arial, Helvetica, sans-serif;
+  background:linear-gradient(180deg,var(--bg),#eef4fb 80%);
+  color:var(--muted);
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Keep page footer at bottom by letting container grow */
+.container{flex:1;max-width:1100px;margin:24px auto;padding:0 20px}
+
+/* Banner / header */
+header{
+  background: linear-gradient(135deg,var(--primary) 0%, #0f5f88 60%);
+  color: white;
+  padding:22px 26px;
+  border-radius:12px;
+  box-shadow: 0 10px 30px var(--shadow);
+}
+header .banner-inner{display:flex;align-items:center;gap:18px;justify-content:space-between}
+/* move avatar to the right on wide screens for a stronger visual balance */
+header .brand{display:flex;align-items:center;gap:16px}
+header img{width:120px;height:120px;object-fit:cover;border-radius:12px;border:4px solid rgba(255,255,255,0.12);box-shadow:0 8px 20px rgba(7,43,82,0.12)}
+header h1{font-size:1.9rem;margin:0;line-height:1}
+header p.lead{margin:6px 0 0;color:rgba(255,255,255,0.95);font-weight:600}
+
+/* Navigation tweaks (works with bootstrap classes already present) */
+nav.navbar{margin-top:16px;border-radius:10px;background:var(--card);box-shadow:0 6px 18px var(--shadow);padding:10px}
+nav a, .nav_link{color:var(--muted);text-decoration:none;padding:8px 14px;border-radius:8px;font-weight:600}
+nav a:hover, .nav_link:hover{background:var(--panel);color:var(--primary);box-shadow:0 4px 12px rgba(15,76,117,0.06)}
+
+/* Layout columns — keep spacing consistent */
+main.row{display:flex;flex-wrap:wrap;gap:18px;margin-top:18px}
+/* Removed empty ruleset for column classes */
+
+.card{background:var(--card);border-radius:10px;padding:18px;box-shadow:0 10px 30px rgba(12,35,58,0.06)}
+.hero{display:block;border-radius:8px;overflow:hidden}
+
+/* Right column image */
+.img-responsive{max-width:100%;height:auto;border-radius:8px;box-shadow:0 8px 20px rgba(12,35,58,0.06)}
+
+/* Headings */
+h3{color:var(--card);background:var(--primary);padding:12px;border-radius:8px;margin-top:0;font-weight:700}
+
+/* Lists */
+.event_list, .event_list2, .event_list3{list-style:none;padding:0;margin:0}
+.event_list li, .event_list2 li{background:linear-gradient(180deg,var(--panel),#f6fbff);border:1px solid rgba(7,43,82,0.03);border-radius:8px;padding:12px;margin:10px 0}
+.event_list3{margin-left:0}
+
+.data-label{color:var(--muted);font-weight:800}
+.data-label:hover{color:var(--accent);text-decoration:underline}
+
+/* Buttons */
+.button{display:inline-block;background:linear-gradient(180deg,#ffffff,#f4f6fb);color:var(--primary);border:1px solid rgba(15,76,117,0.12);padding:10px 14px;border-radius:8px;font-weight:800;text-decoration:none}
+.button:hover{background:var(--primary);color:white;border-color:var(--primary);transform:translateY(-1px)}
+.approve{color:green;font-weight:700}
+.deny{color:#d9534f;font-weight:700}
+
+/* Misc labels */
+.evloc{font-weight:700;color:var(--muted)}
+
+/* Tables & forms */
+thead{background:var(--primary);color:white}
+table{border-collapse:collapse;border-bottom:4px solid var(--primary);width:100%}
+td, th{padding:10px;text-align:left}
+form{background:transparent;padding:16px;border-radius:6px}
+input, textarea, select{padding:10px;border:1px solid #cfdff0;border-radius:8px;width:100%}
+label{display:block;margin-bottom:8px;color:var(--muted);font-weight:700}
+textarea{height:140px}
+
+.checkoption{font-weight:400;width:100%}
+
+/* Footer */
+footer{background:#061a33;color:white;padding:18px;border-radius:10px;margin-top:22px;text-align:center}
+
+/* Utility to center images and keep them responsive */
+.center-img{display:block;margin-left:auto;margin-right:auto;max-width:100%;height:auto;border-radius:8px}
+
+/* Full-width footer styling for pages that place footer outside .container */
+.site-footer{background:#061a33;color:white;padding:18px 0;margin-top:28px}
+.site-footer p{margin:0;text-align:center}
+
+/* Responsive rules */
+@media (max-width:900px){
+  header .banner-inner{flex-direction:column;align-items:flex-start;gap:12px}
+  header img{width:96px;height:96px;order:2}
+  header h1{font-size:1.3rem}
+  .container{padding:0 12px}
+  main.row{flex-direction:column}
+}
+
+@media (max-width:480px){
+  header{padding:12px}
+  header h1{font-size:1rem}
+  nav.navbar{padding:6px}
+  header img{width:72px;height:72px}
+}
+
+/* Small utility tweaks */
+.muted{color:var(--muted)}
+.accent{color:var(--accent)}
+.text-right{text-align:right}
+
+/* Caption under feature images */
+.feature-caption{margin-top:8px;font-weight:700;color:var(--muted);}
+
+/* Make feature blocks clickable and add hover feedback */
+.feature-link{display:block;color:inherit;text-decoration:none;padding:8px;border-radius:8px;transition:transform .15s ease,box-shadow .15s ease}
+.feature-link:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 12px 30px rgba(7,43,82,0.12)}
+.feature-link img{border-radius:8px;display:block}
+
+/* Overlay shown on hover with the label (centered) */
+.feature-link{position:relative;overflow:hidden}
+.feature-link .feature-overlay{
+  position:absolute;
+  left:0;right:0;top:0;bottom:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(7,43,82,0.56);
+  color:#fff;font-weight:800;font-size:1.05rem;
+  opacity:0;transform:translateY(6px);transition:opacity .18s ease,transform .18s ease;
+  border-radius:8px;
+}
+.feature-link:hover .feature-overlay{opacity:1;transform:none}
+
+/* gently hide the static caption while overlay is visible */
+.feature-link .feature-caption{transition:opacity .18s ease,transform .18s ease}
+.feature-link:hover .feature-caption{opacity:0;transform:translateY(6px)}
